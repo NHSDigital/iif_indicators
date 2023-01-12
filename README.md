@@ -6,7 +6,7 @@ Code for IIF indicator AC-02: emergency admissions for specified Ambulatory Care
 TBC
 
 ## Monthly run quick guide
-To begin, in the 'iif-indicators' agreemnent, navigate to Workspaces> iif_indicators_collab> AC-02 ACSC> main> main.py
+To begin, in the 'iif-indicators' agreement, navigate to Workspaces> iif_indicators_collab> AC-02 ACSC> main> main.py
 
 In Cmd 16, enter the reporting period end date of the timeframe you wish to produce in the format 'yyyy-mm-dd', and then click 'Run All' at the top. This will run the pipeline, and update the neccessary tables with the outputs. A seperate DMS pipeline will then send the data to CQRS and UDAL as required. 
 
@@ -73,3 +73,4 @@ If you have any questions about this repo, or suggestions on how we can improve 
 The IIF AC-02 codebase is released under the MIT License.
 
 The documentation is © Crown copyright and available under the terms of the Open Government 3.0 licence.
+https://www.nationalarchives.gov.uk/information-management/re-using-public-sector-information/uk-government-licensing-framework/crown-copyright/
