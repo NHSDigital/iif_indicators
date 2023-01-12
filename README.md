@@ -63,8 +63,9 @@ AC-02 ACSC/src
 │    │  utils_test.py
 ```
 The nuttr and chispa packages have been recreated in the tests folder as a workaround for loading the packages in DAE. 
+
 ## Installation
-This pipeline has been created in an NHS Digital DataBricks environment, and requires no setup when run on internal clusters. Imports are specified at the top of each notebook.  
+This pipeline has been created in an NHS Digital DataBricks environment, and requires no setup when run on internal clusters. Imports are specified at the top of each notebook. Created on DataBricks cluster runtime version 10.4 LTS (includes Apache Spark 3.2.1, Scala 2.12).   
 
 ## Support
 If you have any questions about this repo, or suggestions on how we can improve it, please get in touch here: gpdata.enquiries@nhs.net
