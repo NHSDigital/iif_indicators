@@ -39,7 +39,7 @@ import pandas as pd
 
 # DBTITLE 1,Configure dates
 #Enter report date here
-report_date = '2022-09-30'
+report_date = '2022-10-31'
 
 date_obj = reportDate(report_date)
 
@@ -111,11 +111,7 @@ acsc_indicator_landing_table_df = cqrs_denominator_df.union(cqrs_numerator_df)
 archive_landing_table(acsc_indicator_landing_table_df,'acsc_indicator_cqrs_archive_table')
 
 # Update cqrs indicator table
-update_indicators_for_cqrs_or_udal_table(acsc_indicator_landing_table_df, 'cqrs')
-
-# COMMAND ----------
-
-display(spark.table('iif_indicators_collab.indicators_for_cqrs').filter(F.col('ORG_ID')=='U99355'))
+update_indicators_for_cqrs_or_udal_table(acsc_indicator_landing_table_df, 'cqrs_ac02')
 
 # COMMAND ----------
 
@@ -151,9 +147,31 @@ udal_dfs_to_union = [
 
 acsc_indicator_udal_landing_table_df = reduce(DataFrame.union, udal_dfs_to_union)
 
-# Archive then update publication table
+# Archive then update udal table
 archive_landing_table(acsc_indicator_udal_landing_table_df,'acsc_indicator_udal_archive_table')
-update_indicators_for_cqrs_or_udal_table(acsc_indicator_udal_landing_table_df, 'udal')
+update_indicators_for_cqrs_or_udal_table(acsc_indicator_udal_landing_table_df, 'udal_ac02')
 
 # COMMAND ----------
 
+# MAGIC %sql 
+# MAGIC SELECT * FROM iif_indicators_collab.indicators_for_cqrs_ac02 ORDER BY CREATED_AT DESC
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC 
+# MAGIC ### Data for publication
+# MAGIC 
+# MAGIC The cell below contains the data to be exported for publication
+
+# COMMAND ----------
+
+publication_data = spark.table('iif_indicators_collab.indicators_for_publication')
+
+display(publication_data)
+
+# COMMAND ----------
+
+# MAGIC %run ./dq_checks
+
+# COMMAND ----------
