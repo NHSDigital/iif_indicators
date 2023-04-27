@@ -1,4 +1,8 @@
 # Databricks notebook source
+import pyspark.sql.functions as F
+
+# COMMAND ----------
+
 # DBTITLE 1,ACSC logic
 acsc_logic = {
   
@@ -84,8 +88,8 @@ denominator_pub_dict = {
 }
 
 non_standardised_udal_dict = {
-  'D3C64D53-20CF-43E7-B15B-1AA8613F7B74':'D3C64D53-20CF-43E7-B15B-1AA8613F7BNS',
-  '0871C126-B4C3-4054-A0C0-2481525A940F':'0871C126-B4C3-4054-A0C0-2481525A94NS'
+  'D3C64D53-20CF-43E7-B15B-1AA8613F7B74':'d4909566-9bc8-11ed-a8fc-0242ac120002',
+  '0871C126-B4C3-4054-A0C0-2481525A940F':'d4909836-9bc8-11ed-a8fc-0242ac120002'
 }
 
 standardised_udal_dict = {

@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ../functions/utils
+
+# COMMAND ----------
+
 # DBTITLE 1,Ingestion
 database = 'hes_ahas'
 current_fy_table = 'hes_apc_2223'
@@ -76,3 +80,16 @@ standardised_numerator_id = 'D3C64D53-20CF-43E7-B15B-1AA8613F7B74'
 baseline_denominator_indicator_id = '88337490-8A59-4C40-8C13-FF0D9D01F48D'
 baseline_standardised_numerator_indicator_id = '0871C126-B4C3-4054-A0C0-2481525A940F'
 non_standardised_numerator_id = 'ACSC Emergency Admissions non-standardised numerator'
+
+# COMMAND ----------
+
+# DBTITLE 1,ACC-08 and EHCH-04 parameters
+# Used to join on attribute_mapping
+acc_08_denom_label = 'ACC-08 Denominator'
+acc_08_num_label = 'ACC-08 Numerator'
+echc_04_label = 'EHCH-04 Numerator'
+
+# Set up date ranges 
+report_end = datetime.date.today().replace(day=1) - datetime.timedelta(days=1)
+
+start_financial_year = get_financial_year()
