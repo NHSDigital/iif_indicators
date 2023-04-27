@@ -8,6 +8,12 @@ from pyspark.sql import DataFrame
 from pandas.tseries.offsets import MonthEnd
 from typing import List
 
+import functools
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql.window import Window
+spark = SparkSession.builder.getOrCreate()
+
 # COMMAND ----------
 
 def create_table(table_name: str, database_name: str, dataframe_name: DataFrame): 
@@ -246,3 +252,153 @@ def get_attribute_codes(database_name: str = 'iif_indicators_collab', table_name
   )
 
   return df
+
+# COMMAND ----------
+
+def are_dfs_equal(df1, df2):
+  df1 = df1.orderBy('ORG_ID', 'ACHIEVEMENT_DATE', 'ATTRIBUTE_IDENTIFIER', 'DATA_REFERENCE_IDENTIFIER')
+  df2 = df2.orderBy('ORG_ID', 'ACHIEVEMENT_DATE', 'ATTRIBUTE_IDENTIFIER', 'DATA_REFERENCE_IDENTIFIER')
+  
+  if df1.schema != df2.schema:
+      print('schema mismatch')
+      return False
+  if df1.collect() != df2.collect():
+      print('data mismatch')
+      return False
+  return True
+
+# COMMAND ----------
+
+
+# explicit function
+def unionAll(dfs):
+    return functools.reduce(lambda df1, df2: df1.union(df2.select(df1.columns)), dfs)
+
+# COMMAND ----------
+
+def add_to_table(df: DataFrame, table_name: str) -> None:
+  """
+  Creates a table if it doesn't exist and will add the provided dataframe to it.
+  Will not allow for duplicate entries (protected by timestamp)
+  
+  Args:
+    df: The dataframe that should be saved
+    table_name: The full name of the table that should be saved
+    
+  Returns:
+    None
+  """
+  #try:
+    
+  #existing_df = spark.table(table_name)
+  #df = unionAll([existing_df, df])
+  df.write.mode("overwrite").insertInto(table_name)
+ # except:
+  #  pass
+ #  df.write.mode('overwrite').saveAsTable(table_name)
+
+# COMMAND ----------
+
+def get_attribute_uuid(attribute_description : str):
+  """
+  Gets the Indicator ID and Attribute_ID from the attribute mapping table and returns those values as a tuple
+  
+  Args:
+    attribute_description: The description (key) of the indicator value i.e. "ACC-08 Numerator"
+    
+  Returns:
+    Tuple: 
+      [0] = Indicator ID also referred to as DATA_REFERENCE_IDENTIFIER. For example ACC-08 falls under indicator NCD026
+      [1] = Attribute_ID. For example referring to the Numerator of ACC-08
+  """
+  
+  df = spark.sql("""
+    SELECT Indicator, Attribute_ID
+    FROM iif_indicators_collab.attribute_mapping 
+    WHERE Attribute_description = '{description}'
+    """.format(description=attribute_description)).first()
+
+  if df == None:
+    return ("INDICATOR NOT FOUND IN LOOKUP", "INDICATOR NOT FOUND IN LOOKUP")
+  return df[0], df[1]
+
+# COMMAND ----------
+
+def get_financial_year():
+  """
+  Returns the start of the current financial year 
+  """
+  
+  start_financial_year = datetime.date.today().replace(day=1).replace(month=4)
+  
+  # Say it's Feb 2022, we need to subtract 1 year from our 01/04 date
+  if start_financial_year > report_end:
+    current_year = start_financial_year.year  
+    start_financial_year = start_financial_year.replace(year=current_year-1)
+  
+  return start_financial_year
+
+# COMMAND ----------
+
+def check_schemas_match(df1: DataFrame,
+                        df2: DataFrame,
+                        allow_nullable_schema_mismatch=True
+                       ) -> bool:
+  """
+  Returns True if the dataframe schemas match, or False otherwise.
+  
+  If allow_nullable_schema_mismatch is False then the nullability of the columns must also match.
+  If True, nullability isn't included in the check.
+  """
+  
+  if df1.schema == df2.schema:
+    return True
+  elif not allow_nullable_schema_mismatch:
+    print('allow_nullable_schema_mismatch')
+    return False
+  
+  if len(df1.schema) != len(df2.schema):
+    print('schema length mismatch')    
+    return False
+  
+  for field_1, field_2 in zip(df1.schema, df2.schema):
+    if field_1.name != field_2.name:
+      print('name error', field_1, field_2)      
+      return False
+    if field_1.dataType != field_2.dataType:
+      print('datatype error', field_1, field_2)
+      
+      return False
+
+
+# COMMAND ----------
+
+def are_dfs_equal(df1, df2):
+  df1_cols = sorted(df1.columns)
+  df2_cols = sorted(df2.columns)
+  
+  if df1_cols!=df2_cols:
+    print('cols are not equal')
+    
+  # sort by columns
+  df1 = df1.orderBy(df1_cols)
+  df2 = df2.orderBy(df2_cols)
+  
+  #check schemas match
+  schema_bool = check_schemas_match(df1, df2)
+  if schema_bool==False:
+    print('schema mismatch')
+    return False
+    
+  #check data matches
+  if df1.collect() != df2.collect():
+    for i in range(0,len(df1.collect())):
+      if df1.collect()[i]!=df2.collect()[i]:
+        print(df1.collect()[i], '\n')
+        print(df2.collect()[i], '\n')
+        print('data mismatch')
+        return False
+  return True
+
+# COMMAND ----------
+

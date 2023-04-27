@@ -4,43 +4,26 @@
 
 # COMMAND ----------
 
-# MAGIC %run ./functions/01_create_denominator
+# DBTITLE 1,Import dependencies
+# MAGIC %run ./functions/iif_dependencies
 
 # COMMAND ----------
 
-# MAGIC %run ./functions/02_create_numerator
+# DBTITLE 1,User input
+# Enter report date here
+report_date = '2023-02-28'
+
+# First run = True will create necessary ref tables used in this pipeline. This setup will only be necessary once.
+first_run = False
 
 # COMMAND ----------
 
-# MAGIC %run ./functions/03_apply_standardisation
-
-# COMMAND ----------
-
-# MAGIC %run ./functions/04_create_outputs
-
-# COMMAND ----------
-
-# MAGIC %run ./functions/utils
-
-# COMMAND ----------
-
-# MAGIC %run ./constants/parameters
-
-# COMMAND ----------
-
-# MAGIC %run ./constants/field_definitions
-
-# COMMAND ----------
-
-import pyspark.sql.functions as F
-import pandas as pd
+if first_run == True:
+  create_ref_tables()
 
 # COMMAND ----------
 
 # DBTITLE 1,Configure dates
-#Enter report date here
-report_date = '2022-10-31'
-
 date_obj = reportDate(report_date)
 
 RPSD = date_obj.financial_year_start
@@ -96,8 +79,11 @@ create_table('baseline_amb_care_pats', 'iif_indicators_collab', previous_fy_nume
 attribute_codes = get_attribute_codes()
 current_year_standardised_numerator_df = generate_standardised_numerator('iif_indicators_collab', 'amb_care_pats', standardised_numerator_id, report_period_month_start)
 baseline_year_standardised_numerator_df = generate_standardised_numerator('iif_indicators_collab', 'baseline_amb_care_pats', baseline_standardised_numerator_indicator_id, baseline_month_start)
-
 standardised_numerator_df = current_year_standardised_numerator_df.unionByName(baseline_year_standardised_numerator_df, allowMissingColumns=True)
+
+pcn_code_to_name= current_pcn_mapping_df.groupBy('PCN_CODE', 'PCN_NAME').count().drop('count')
+standardised_numerator_df = standardised_numerator_df.join(pcn_code_to_name, ['PCN_CODE'], how = 'left') 
+
 create_table("acsc_cqrs_numerator", "iif_indicators_collab", standardised_numerator_df)
 
 # COMMAND ----------
@@ -107,10 +93,8 @@ cqrs_denominator_df = prepare_cqrs_udal_data('acsc_cqrs_denominator', 'PCN_CODE'
 cqrs_numerator_df = prepare_cqrs_udal_data('acsc_cqrs_numerator', 'PCN_CODE', RPED, standardised_cqrs_dict, count_column = 'standardised_admissions')
 acsc_indicator_landing_table_df = cqrs_denominator_df.union(cqrs_numerator_df)
 
-# Compare landing table to archive, write to landing table if new 
+# Archive then update publication table
 archive_landing_table(acsc_indicator_landing_table_df,'acsc_indicator_cqrs_archive_table')
-
-# Update cqrs indicator table
 update_indicators_for_cqrs_or_udal_table(acsc_indicator_landing_table_df, 'cqrs_ac02')
 
 # COMMAND ----------
@@ -139,6 +123,12 @@ udal_denominator_df = prepare_cqrs_udal_data('acsc_cqrs_denominator', 'PCN_CODE'
 udal_numerator_df = prepare_cqrs_udal_data('acsc_cqrs_numerator', 'PCN_CODE', RPED, standardised_udal_dict, count_column = 'standardised_admissions')
 udal_non_standardised_numerator_df = prepare_cqrs_udal_data('acsc_cqrs_numerator', 'PCN_CODE', RPED, non_standardised_udal_dict, count_column = 'admissions')
 
+#########SUPPRESSION#######
+# udal_numerators_df = udal_numerator_df.union(udal_non_standardised_numerator_df)
+# udal_numerators_supp_df = udal_numerators_df.withColumn('ATTRIBUTE_VALUE', wc_suppress('ATTRIBUTE_VALUE'))
+# acsc_indicator_udal_landing_table_df = udal_denominator_df.union(udal_numerators_supp_df)
+# TO APPLY, UNCOMMENT ABOVE 3 LINES AND REMOVE LINES 11-17 INCLUSIVE
+###########################
 udal_dfs_to_union = [
   udal_denominator_df, 
   udal_numerator_df, 
@@ -150,11 +140,6 @@ acsc_indicator_udal_landing_table_df = reduce(DataFrame.union, udal_dfs_to_union
 # Archive then update udal table
 archive_landing_table(acsc_indicator_udal_landing_table_df,'acsc_indicator_udal_archive_table')
 update_indicators_for_cqrs_or_udal_table(acsc_indicator_udal_landing_table_df, 'udal_ac02')
-
-# COMMAND ----------
-
-# MAGIC %sql 
-# MAGIC SELECT * FROM iif_indicators_collab.indicators_for_cqrs_ac02 ORDER BY CREATED_AT DESC
 
 # COMMAND ----------
 
@@ -172,6 +157,11 @@ display(publication_data)
 
 # COMMAND ----------
 
-# MAGIC %run ./dq_checks
+# MAGIC %run ./dq_checks/ac_02_dq_checks
 
 # COMMAND ----------
+
+display(spark.table('iif_indicators_collab.indicators_for_cqrs_ac02').orderBy(F.col('ACHIEVEMENT_DATE').desc()))
+
+# COMMAND ----------
+

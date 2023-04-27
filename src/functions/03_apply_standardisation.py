@@ -82,6 +82,7 @@ def find_admissions_by_age_sex(pcn_mapping: DataFrame, age_sex_ref_df: DataFrame
   """
 
   age_band_pcn_joined_df = pcn_mapping.crossJoin(age_sex_ref_df).distinct()
+
   admissions_by_age_sex_df = (
     age_band_pcn_joined_df
     .join(admissions_data, ['PRACTICE_CODE', 'AGE', 'SEX', 'PCN_CODE'], how = 'left')
@@ -89,9 +90,10 @@ def find_admissions_by_age_sex(pcn_mapping: DataFrame, age_sex_ref_df: DataFrame
     .withColumnRenamed('sum(FAE_EMERGENCY)','admissions')
     .fillna(0, 'admissions')
     .orderBy('PCN_CODE', 'AGE_FIVE_YEAR'))
+
   return admissions_by_age_sex_df
 
-  
+
 def find_admissions_by_pcn(pcn_map_df: DataFrame, admissions_data_df: DataFrame) -> DataFrame:
   
   """
@@ -113,7 +115,8 @@ def find_admissions_by_pcn(pcn_map_df: DataFrame, admissions_data_df: DataFrame)
     .fillna(0, 'admissions')
     .orderBy('PCN_CODE')
   )
-  return df 
+  return df
+
 
 
 def generate_standardised_numerator(db_name: str, table_name: str, acsc_indicator_code: str, date: str) -> DataFrame:
@@ -151,7 +154,7 @@ def generate_standardised_numerator(db_name: str, table_name: str, acsc_indicato
                        .withColumn('stan_sum', (F.col('admissions') * F.col('eng_population_by_age_sex')) / F.col('banded_pcn_pop'))
                        .groupBy('PCN_CODE', 'eng_population').agg(F.sum('stan_sum')).withColumnRenamed('sum(stan_sum)','stan_sum')
                        .withColumn('DSR', F.col('stan_sum') * (1 / F.col('eng_population')))
-                      )
+                      ) 
 
   pcn_list_size_totals = pcn_list_size.groupBy('PCN_CODE').sum('banded_pcn_pop').withColumnRenamed('sum(banded_pcn_pop)','pcn_pop')
 
@@ -163,5 +166,5 @@ def generate_standardised_numerator(db_name: str, table_name: str, acsc_indicato
                         .withColumn('ATTRIBUTE_ID', F.lit(acsc_indicator_code))
                         .orderBy('PCN_CODE')
                        )
-  
+
   return standardised_numerator 
