@@ -6,7 +6,7 @@ ACC-08: Number of general practice appointments for which the time from booking 
 EHCH-04: Number of general practice appointments categorised as 'patient contact as part of weekly care home round'.
 
 ## Links to Publication Website & Metadata
-TBC
+Network Contract DES (MI) publication - https://digital.nhs.uk/data-and-information/publications/statistical/mi-network-contract-des
 
 ## Monthly run guide
 If running for the first time in a new environment, alter the first_run variable to 'True'. This will run the 'create_ref_tables()' function, setting up any internal reference tables. Any lines of code that refer to archiving will fail but can be deleted. 
